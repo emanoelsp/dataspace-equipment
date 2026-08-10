@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Preflight CORS para chamadas browser→CPS com header Authorization.
+// Hosts locais autorizados a acessar sem token.
+// No Next.js dev sem proxy, request.ip não é populado; usamos o header Host
+// que o browser envia com o hostname/IP digitado na barra de endereços.
+const TRUSTED_HOSTS = new Set([
+  "192.168.0.82:3001",
+  "192.168.0.82",
+  "localhost:3001",
+  "localhost",
+  "127.0.0.1:3001",
+  "127.0.0.1",
+])
+
 export function middleware(request: NextRequest) {
   if (request.method === "OPTIONS") {
     return new NextResponse(null, {
@@ -13,6 +24,14 @@ export function middleware(request: NextRequest) {
       },
     })
   }
+
+  const host = request.headers.get("host") ?? ""
+  if (TRUSTED_HOSTS.has(host) && !request.headers.get("authorization")) {
+    const headers = new Headers(request.headers)
+    headers.set("authorization", "Bearer demo")
+    return NextResponse.next({ request: { headers } })
+  }
+
   return NextResponse.next()
 }
 
