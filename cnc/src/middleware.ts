@@ -26,13 +26,16 @@ export function middleware(request: NextRequest) {
   }
 
   const host = request.headers.get("host") ?? ""
-  if (TRUSTED_HOSTS.has(host) && !request.headers.get("authorization")) {
-    const headers = new Headers(request.headers)
-    headers.set("authorization", "Bearer demo")
-    return NextResponse.next({ request: { headers } })
+  const requestHeaders = new Headers(request.headers)
+  if (TRUSTED_HOSTS.has(host) && !requestHeaders.get("authorization")) {
+    requestHeaders.set("authorization", "Bearer demo")
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set("Access-Control-Allow-Origin", "*")
+  response.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS")
+  response.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+  return response
 }
 
 export const config = { matcher: "/api/:path*" }
